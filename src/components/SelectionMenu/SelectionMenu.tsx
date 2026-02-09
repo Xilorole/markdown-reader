@@ -15,6 +15,7 @@ export function SelectionMenu({ x, y, visible, onClick }: SelectionMenuProps) {
       className={styles.menu}
       style={{ left: x, top: y }}
       onMouseDown={(e) => e.preventDefault()}
+      onMouseUp={(e) => e.stopPropagation()}
       onClick={onClick}
       role="button"
       aria-label="注釈を追加"

@@ -85,15 +85,18 @@ export default function App() {
       setHtml(parsed.html);
       setPlainText(parsed.plainText);
       resetAi();
-      // After DOM update, rebuild observer
-      requestAnimationFrame(() => rebuild());
     },
-    [rebuild, resetAi],
+    [resetAi],
   );
 
   useEffect(() => {
     initialize(sampleMarkdown);
   }, [initialize]);
+
+  // html変更後、DOMが更新されてからObserverを再構築
+  useEffect(() => {
+    if (html) rebuild();
+  }, [html, rebuild]);
 
   // ── Attach footnote-ref events (delegation) ──
   useEffect(() => {

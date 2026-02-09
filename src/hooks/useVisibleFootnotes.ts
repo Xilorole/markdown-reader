@@ -26,6 +26,8 @@ export function useVisibleFootnotes(contentRef: React.RefObject<HTMLDivElement |
   /** observer再構築（initialize時） */
   const rebuild = useCallback(() => {
     observerRef.current?.disconnect();
+    pinnedRef.current.clear();
+    setVisible(new Set());
 
     const obs = new IntersectionObserver(
       (entries) => {

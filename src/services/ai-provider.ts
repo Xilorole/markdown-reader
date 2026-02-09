@@ -23,11 +23,19 @@ async function callAnthropic(req: AiCompletionRequest): Promise<AiCompletionResp
       messages: [{ role: 'user', content: `${SYSTEM_PROMPT}\n\n${buildUserPrompt(req)}` }],
     }),
   });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Anthropic API error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
   const data = await res.json();
   const text = (data.content ?? [])
     .filter((b: { type: string }) => b.type === 'text')
     .map((b: { text: string }) => b.text)
     .join('');
+
+  if (!text) throw new Error('Anthropic API: 空のレスポンス');
   return { text };
 }
 
@@ -38,7 +46,11 @@ async function callAoai(
   if (!config.endpoint || !config.apiKey || !config.deploymentName) {
     throw new Error('Azure OpenAI の設定が不完全です');
   }
-  const url = `${config.endpoint}/openai/deployments/${config.deploymentName}/chat/completions?api-version=2024-06-01`;
+
+  // endpoint末尾のスラッシュを正規化
+  const base = config.endpoint.replace(/\/+$/, '');
+  const url = `${base}/openai/deployments/${config.deploymentName}/chat/completions?api-version=2024-06-01`;
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -53,8 +65,16 @@ async function callAoai(
       max_tokens: 1000,
     }),
   });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Azure OpenAI error ${res.status}: ${body.slice(0, 200)}`);
+  }
+
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content ?? '';
+
+  if (!text) throw new Error('Azure OpenAI: 空のレスポンス');
   return { text };
 }
 

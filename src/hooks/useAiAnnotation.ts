@@ -75,8 +75,8 @@ export function useAiAnnotation(
           next.set(id, { ...annotation, text: res.text, loading: false });
           return next;
         });
-      } catch {
-        const errText = '注釈の取得に失敗しました';
+      } catch (e) {
+        const errText = e instanceof Error ? e.message : '注釈の取得に失敗しました';
         footnotesRef.current.set(id, errText);
         setAnnotations((prev) => {
           const next = new Map(prev);
