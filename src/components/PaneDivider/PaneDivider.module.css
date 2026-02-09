@@ -1,39 +1,39 @@
 .divider {
   position: absolute;
-  left: 0;
+  left: -10px;
   top: 0;
-  width: 14px;
+  width: 20px;
   height: 100%;
   cursor: pointer;
-  z-index: 1;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: all;
 }
 
-.line {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
+.lineTop,
+.lineBottom {
   width: 1px;
   background-color: var(--color-border);
   transition: all var(--transition-fast);
+  flex: 1;
 }
 
-.divider:hover .line {
+.divider:hover .lineTop,
+.divider:hover .lineBottom {
   width: 0;
   border-left: 1px dashed var(--color-accent-light);
 }
 
 .icon {
-  position: absolute;
-  left: 2px;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0;
-  transition: opacity var(--transition-fast);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
   color: var(--color-accent-light);
-  pointer-events: none;
 }
 
 .divider:hover .icon {
-  opacity: 1;
+  display: flex;
 }

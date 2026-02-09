@@ -218,6 +218,7 @@ export default function App() {
       <Header
         sidebarVisible={sidebarVisible}
         onToggleSidebar={() => setSidebarVisible(true)}
+        onCloseSidebar={() => setSidebarVisible(false)}
         onFileOpen={initialize}
         onOpenSettings={() => setSettingsOpen(true)}
       />

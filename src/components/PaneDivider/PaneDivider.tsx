@@ -1,4 +1,4 @@
-import { IconScissors } from '@/components/icons';
+import { Scissors } from 'lucide-react';
 import styles from './PaneDivider.module.css';
 
 interface PaneDividerProps {
@@ -9,11 +9,17 @@ interface PaneDividerProps {
 export function PaneDivider({ visible, onClick }: PaneDividerProps) {
   if (!visible) return null;
   return (
-    <div className={styles.divider} onClick={onClick} role="button" aria-label="注釈を閉じる">
-      <div className={styles.line} />
+    <div
+      className={styles.divider}
+      onClick={onClick}
+      role="button"
+      aria-label="注釈を閉じる"
+    >
+      <div className={styles.lineTop} />
       <span className={styles.icon}>
-        <IconScissors size={14} />
+        <Scissors size={14} />
       </span>
+      <div className={styles.lineBottom} />
     </div>
   );
 }

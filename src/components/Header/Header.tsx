@@ -1,10 +1,11 @@
-import { FolderOpen, PanelRight, Settings } from 'lucide-react';
+import { FolderOpen, PanelRight, PanelRightClose, Settings } from 'lucide-react';
 import { useRef } from 'react';
 import styles from './Header.module.css';
 
 interface HeaderProps {
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
+  onCloseSidebar: () => void;
   onFileOpen: (text: string) => void;
   onOpenSettings: () => void;
 }
@@ -12,6 +13,7 @@ interface HeaderProps {
 export function Header({
   sidebarVisible,
   onToggleSidebar,
+  onCloseSidebar,
   onFileOpen,
   onOpenSettings,
 }: HeaderProps) {
@@ -32,16 +34,14 @@ export function Header({
     <header className={styles.header}>
       <h1 className={styles.title}>Markdown Reader</h1>
       <div className={styles.controls}>
-        {!sidebarVisible && (
-          <button
-            className={styles.iconBtn}
-            onClick={onToggleSidebar}
-            aria-label="注釈を表示"
-            data-tooltip="注釈"
-          >
-            <PanelRight size={18} />
-          </button>
-        )}
+        <button
+          className={styles.iconBtn}
+          onClick={sidebarVisible ? onCloseSidebar : onToggleSidebar}
+          aria-label={sidebarVisible ? '注釈を閉じる' : '注釈を表示'}
+          data-tooltip={sidebarVisible ? '閉じる' : '注釈'}
+        >
+          {sidebarVisible ? <PanelRightClose size={18} /> : <PanelRight size={18} />}
+        </button>
         <button
           className={styles.iconBtn}
           onClick={() => inputRef.current?.click()}
