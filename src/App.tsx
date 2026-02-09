@@ -6,6 +6,7 @@ import { Header } from '@/components/Header/Header';
 import { SelectionMenu } from '@/components/SelectionMenu/SelectionMenu';
 import { SettingsDialog } from '@/components/SettingsDialog/SettingsDialog';
 import { useAiAnnotation } from '@/hooks/useAiAnnotation';
+import { useMobileMode } from '@/hooks/useMobileMode';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import { useVisibleFootnotes } from '@/hooks/useVisibleFootnotes';
@@ -32,6 +33,7 @@ export default function App() {
   // ── Sidebar ──
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const wideMode = useWideMode();
+  const mobileMode = useMobileMode();
 
   // ── Refs ──
   const contentRef = useRef<HTMLDivElement>(null);
@@ -146,7 +148,7 @@ export default function App() {
 
   // ── Pane position (wide mode) ──
   useEffect(() => {
-    if (!sidebarVisible) return;
+    if (!sidebarVisible || mobileMode) return;
     const paneEl = document.querySelector<HTMLElement>('[data-visible="true"]');
     if (!paneEl) return;
 
@@ -164,20 +166,20 @@ export default function App() {
 
     window.addEventListener('resize', apply);
     return () => window.removeEventListener('resize', apply);
-  }, [sidebarVisible, wideMode]);
+  }, [sidebarVisible, wideMode, mobileMode]);
 
   // ── Narrow mode: push content ──
   useEffect(() => {
     const el = contentRef.current;
     if (!el) return;
-    if (sidebarVisible && !wideMode) {
+    if (sidebarVisible && !wideMode && !mobileMode) {
       el.style.marginRight = 'var(--pane-width)';
       el.style.marginLeft = '0';
     } else {
       el.style.marginRight = '';
       el.style.marginLeft = '';
     }
-  }, [sidebarVisible, wideMode]);
+  }, [sidebarVisible, wideMode, mobileMode]);
 
   // Hide tooltip on scroll
   useEffect(() => {
@@ -233,6 +235,7 @@ export default function App() {
           footnotes={footnotesRef.current}
           aiAnnotations={annotations}
           highlightId={highlightId}
+          mobileMode={mobileMode}
           onRemoveAi={removeAnnotation}
           onClose={() => setSidebarVisible(false)}
           onHoverFootnote={(id) => {

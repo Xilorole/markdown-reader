@@ -21,6 +21,7 @@ interface FootnotePaneProps {
   footnotes: Map<string, string>;
   aiAnnotations: Map<string, AiAnnotation>;
   highlightId: string | null;
+  mobileMode: boolean;
   onRemoveAi: (id: string) => void;
   onHoverFootnote: (id: string | null) => void;
   onClose: () => void;
@@ -28,7 +29,7 @@ interface FootnotePaneProps {
 
 export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
   function FootnotePane(
-    { visible, visibleIds, footnotes, aiAnnotations, highlightId, onRemoveAi, onHoverFootnote, onClose },
+    { visible, visibleIds, footnotes, aiAnnotations, highlightId, mobileMode, onRemoveAi, onHoverFootnote, onClose },
     ref,
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +40,17 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
       if (!visible || !container) return;
 
       const items = container.querySelectorAll<HTMLDivElement>(`.${styles.footnoteItem}`);
+
+      // モバイル時は絶対配置をスキップ（順次表示）
+      if (mobileMode) {
+        container.style.height = '';
+        // モバイル時は絶対配置のスタイルをクリア
+        items.forEach((el) => {
+          el.style.top = '';
+        });
+        return;
+      }
+
       if (items.length === 0) return;
 
       const containerRect = container.getBoundingClientRect();
@@ -69,7 +81,7 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
       }
 
       container.style.height = `${prevBottom}px`;
-    }, [visible]);
+    }, [visible, mobileMode]);
 
     useImperativeHandle(ref, () => ({ reposition }), [reposition]);
 
@@ -98,6 +110,7 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
         ref={paneRef}
         className={styles.pane}
         data-visible={visible}
+        data-mobile={mobileMode || undefined}
       >
         <PaneDivider visible={visible} onClick={onClose} />
         <div ref={containerRef} className={styles.container}>
