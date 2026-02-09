@@ -181,17 +181,6 @@ export default function App() {
     }
   }, [sidebarVisible, wideMode, mobileMode]);
 
-  // ── Mobile mode: add bottom padding for footnote pane ──
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    if (sidebarVisible && mobileMode) {
-      el.style.paddingBottom = 'calc(40vh + 2rem)';
-    } else {
-      el.style.paddingBottom = '';
-    }
-  }, [sidebarVisible, mobileMode]);
-
   // Hide tooltip on scroll
   useEffect(() => {
     const handler = () => setTooltip(null);
@@ -236,31 +225,36 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
-      <main style={{ marginTop: 'var(--header-height)' }}>
+      <main
+        style={{ marginTop: 'var(--header-height)' }}
+        data-mobile={mobileMode || undefined}
+      >
         <ContentArea ref={contentRef} html={html} />
 
-        <FootnotePane
-          ref={paneRef}
-          visible={sidebarVisible}
-          visibleIds={mergedVisibleIds}
-          footnotes={footnotesRef.current}
-          aiAnnotations={annotations}
-          highlightId={highlightId}
-          mobileMode={mobileMode}
-          onRemoveAi={removeAnnotation}
-          onClose={() => setSidebarVisible(false)}
-          onHoverFootnote={(id) => {
-            setHighlightId(id);
-            document.querySelectorAll('.footnote-ref').forEach((el) =>
-              el.classList.remove('highlight-source'),
-            );
-            if (id) {
-              document.querySelectorAll(`.footnote-ref[data-footnote="${id}"]`).forEach((el) =>
-                el.classList.add('highlight-source'),
+        {(sidebarVisible || !mobileMode) && (
+          <FootnotePane
+            ref={paneRef}
+            visible={sidebarVisible}
+            visibleIds={mergedVisibleIds}
+            footnotes={footnotesRef.current}
+            aiAnnotations={annotations}
+            highlightId={highlightId}
+            mobileMode={mobileMode}
+            onRemoveAi={removeAnnotation}
+            onClose={() => setSidebarVisible(false)}
+            onHoverFootnote={(id) => {
+              setHighlightId(id);
+              document.querySelectorAll('.footnote-ref').forEach((el) =>
+                el.classList.remove('highlight-source'),
               );
-            }
-          }}
-        />
+              if (id) {
+                document.querySelectorAll(`.footnote-ref[data-footnote="${id}"]`).forEach((el) =>
+                  el.classList.add('highlight-source'),
+                );
+              }
+            }}
+          />
+        )}
       </main>
 
       <SelectionMenu

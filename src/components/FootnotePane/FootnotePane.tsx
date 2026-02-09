@@ -163,20 +163,20 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
               >
                 <div className={styles.footnoteNum}>
                   [{isAi ? '*' : id}]
-                  {isAi && !isLoading && (
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={(e) => { e.stopPropagation(); onRemoveAi(id); }}
-                      aria-label="注釈を削除"
-                    >
-                      <IconClose size={10} />
-                    </button>
-                  )}
                 </div>
                 <div className={styles.footnoteText}>
                   {isLoading && !text ? <ShimmerPlaceholder /> : text}
                   {isLoading && text && <span className={styles.streamingCursor}>▋</span>}
                 </div>
+                {isAi && !isLoading && (
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={(e) => { e.stopPropagation(); onRemoveAi(id); }}
+                    aria-label="注釈を削除"
+                  >
+                    <IconClose size={12} />
+                  </button>
+                )}
               </div>
             );
           })}

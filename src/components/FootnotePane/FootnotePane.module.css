@@ -20,51 +20,99 @@
   transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0s 0s;
 }
 
-/* モバイル: 画面下部に表示 */
+/* モバイル: 画面下部に表示（上下分割） */
 .pane[data-mobile='true'] {
+  position: relative;
   top: auto;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: auto;
+  left: auto;
+  right: auto;
   width: 100%;
   height: 40vh;
   max-height: 400px;
+  min-height: 200px;
   padding: var(--space-md);
-  padding-top: 2.5rem;
-  overflow-y: auto;
-  transform: translateY(100%);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  transform: none;
+  box-shadow: none;
+  transition: none;
+  margin-top: 1.5rem;
+  z-index: 10;
+}
+
+.pane[data-mobile='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
   border-top: 1px solid var(--color-border);
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .pane[data-mobile='true'][data-visible='true'] {
-  transform: translateY(0);
+  transform: none;
 }
 
 .mobileCloseBtn {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  width: 2rem;
-  height: 2rem;
+  top: -1.9rem;
+  right: 0.9rem;
+  width: 2.4rem;
+  height: 2.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
-  border: none;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  border-radius: 0.55rem 0.55rem 0.4rem 0.4rem;
   color: var(--color-text-muted);
   cursor: pointer;
-  z-index: 20;
-  transition: color var(--transition-fast);
+  z-index: 50;
+  transition: all var(--transition-fast);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .mobileCloseBtn:hover {
   color: var(--color-text);
+  background: var(--color-bg-hover);
+}
+
+.mobileCloseBtn::before {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -10px;
+  right: -10px;
+  height: 6px;
+  background: var(--color-bg);
+  z-index: 49;
+}
+
+.mobileCloseBtn::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background: var(--color-border);
+  border-radius: 0 0 0.35rem 0.35rem;
+  z-index: 41;
 }
 
 .container {
   position: relative;
   width: 100%;
+}
+
+/* モバイル: スクロールは中身のみ */
+.pane[data-mobile='true'] .container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .placeholder {
@@ -120,22 +168,23 @@
 }
 
 .deleteBtn {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   cursor: pointer;
   color: #BBB;
-  font-size: 0.6rem;
-  padding: 0.1rem 0.2rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
   background: none;
   border: none;
-  line-height: 1;
+  margin-left: var(--space-xs);
+  transition: color var(--transition-fast);
 }
 
 .deleteBtn:hover {
   color: var(--color-text-muted);
-}
-
-.footnoteItem[data-ai='true']:hover .deleteBtn {
-  display: inline-flex;
 }
 
 .streamingCursor {
