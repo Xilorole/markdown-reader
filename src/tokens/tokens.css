@@ -1,0 +1,65 @@
+:root {
+  /* ── Surface ── */
+  --color-bg:            #FFFEF8;
+  --color-bg-hover:      #F5F5F0;
+  --color-bg-highlight:  rgba(0, 0, 0, 0.04);
+  --color-bg-selection:  rgba(180, 165, 144, 0.3);
+
+  /* ── Text ── */
+  --color-text:          #3D3D3D;
+  --color-text-secondary:#4A4A4A;
+  --color-text-heading:  #5D4E37;
+  --color-text-muted:    #888;
+  --color-text-faint:    #999;
+  --color-text-footnote: #777;
+
+  /* ── Accent ── */
+  --color-accent:        #8B7355;
+  --color-accent-hover:  #6D5C48;
+  --color-accent-light:  #B8A899;
+  --color-accent-subtle: #9B8572;
+
+  /* ── Border ── */
+  --color-border:        #D0D0D0;
+  --color-border-light:  #E0E0E0;
+
+  /* ── Shimmer ── */
+  --color-shimmer-base:  #EDEAE5;
+  --color-shimmer-peak:  #F5F2ED;
+
+  /* ── Scrollbar ── */
+  --color-scrollbar:     rgba(180, 165, 144, 0.25);
+  --color-scrollbar-hover:rgba(180, 165, 144, 0.5);
+
+  /* ── Typography ── */
+  --font-serif:   'Noto Serif JP', 'Yu Mincho', 'YuMincho',
+                  'Hiragino Mincho ProN', 'HG明朝E', serif;
+  --font-size-base:    16px;
+  --font-size-xs:      0.55rem;
+  --font-size-sm:      0.7rem;
+  --font-size-body:    0.75rem;
+  --font-size-ui:      0.85rem;
+  --font-size-h3:      1.3rem;
+  --font-size-h2:      1.6rem;
+  --font-size-h1:      2rem;
+  --line-height:       2;
+
+  /* ── Layout ── */
+  --header-height:     3rem;
+  --content-max-width: 48rem;
+  --pane-width:        20rem;
+  --wide-breakpoint:   72rem;
+
+  /* ── Spacing ── */
+  --space-xs:  0.25rem;
+  --space-sm:  0.5rem;
+  --space-md:  0.75rem;
+  --space-lg:  1rem;
+  --space-xl:  1.5rem;
+  --space-2xl: 2rem;
+  --space-3xl: 3rem;
+
+  /* ── Transitions ── */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+}

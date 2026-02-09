@@ -1,0 +1,19 @@
+.tooltip {
+  position: fixed;
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  max-width: 350px;
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+  color: #666;
+  z-index: 300;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.num {
+  font-size: 0.65rem;
+  color: var(--color-text-faint);
+  margin-bottom: 0.3rem;
+}

@@ -1,0 +1,265 @@
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import type { AiProviderConfig } from '@/types';
+import { parseMarkdown } from '@/services/markdown-parser';
+import { createAiProvider } from '@/services/ai-provider';
+import { useWideMode } from '@/hooks/useWideMode';
+import { useVisibleFootnotes } from '@/hooks/useVisibleFootnotes';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import { useAiAnnotation } from '@/hooks/useAiAnnotation';
+import { usePersistedState } from '@/hooks/usePersistedState';
+import { Header } from '@/components/Header/Header';
+import { ContentArea } from '@/components/ContentArea/ContentArea';
+import { FootnotePane } from '@/components/FootnotePane/FootnotePane';
+import type { FootnotePaneHandle } from '@/components/FootnotePane/FootnotePane';
+import { SelectionMenu } from '@/components/SelectionMenu/SelectionMenu';
+import { FootnoteTooltip } from '@/components/FootnoteTooltip/FootnoteTooltip';
+import { SettingsDialog } from '@/components/SettingsDialog/SettingsDialog';
+import { sampleMarkdown } from '@/sample';
+
+export default function App() {
+  // ── AI Provider ──
+  const [aiConfig, setAiConfig] = usePersistedState<AiProviderConfig>('ai-config', { type: 'anthropic' });
+  const aiProvider = useMemo(() => createAiProvider(aiConfig), [aiConfig]);
+
+  // ── Settings ──
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // ── Parsed content ──
+  const [html, setHtml] = useState('');
+  const [plainText, setPlainText] = useState('');
+  const footnotesRef = useRef<Map<string, string>>(new Map());
+
+  // ── Sidebar ──
+  const [sidebarVisible, setSidebarVisible] = usePersistedState('sidebar-visible', false);
+  const wideMode = useWideMode();
+
+  // ── Refs ──
+  const contentRef = useRef<HTMLDivElement>(null);
+  const paneRef = useRef<FootnotePaneHandle>(null);
+
+  // ── Footnote visibility ──
+  const { visible: visibleIds, rebuild, observe, pin, unpin } =
+    useVisibleFootnotes(contentRef);
+
+  // ── Text selection ──
+  const { selection, consumeRange } =
+    useTextSelection(contentRef);
+
+  // ── Tooltip ──
+  const [tooltip, setTooltip] = useState<{
+    x: number; y: number; id: string; text: string;
+  } | null>(null);
+
+  // ── Sidebar highlight ──
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
+  // ── AI Annotations (for pane rendering) ──
+  const requestReposition = useCallback(() => {
+    requestAnimationFrame(() => paneRef.current?.reposition());
+  }, []);
+
+  const addVisible = useCallback(
+    (_id: string) => {
+      requestReposition();
+    },
+    [requestReposition],
+  );
+  const removeVisible = useCallback(
+    () => requestReposition(),
+    [requestReposition],
+  );
+
+  const aiCallbacks = useMemo(
+    () => ({ observe, pin, unpin, addVisible, removeVisible, requestReposition }),
+    [observe, pin, unpin, addVisible, removeVisible, requestReposition],
+  );
+
+  const { annotations, addAnnotation, removeAnnotation, reset: resetAi } =
+    useAiAnnotation(aiProvider, plainText, footnotesRef, aiCallbacks);
+
+  // ── Initialize content ──
+  const initialize = useCallback(
+    (md: string) => {
+      const parsed = parseMarkdown(md);
+      footnotesRef.current = parsed.footnotes;
+      setHtml(parsed.html);
+      setPlainText(parsed.plainText);
+      resetAi();
+      // After DOM update, rebuild observer
+      requestAnimationFrame(() => rebuild());
+    },
+    [rebuild, resetAi],
+  );
+
+  useEffect(() => {
+    initialize(sampleMarkdown);
+  }, [initialize]);
+
+  // ── Attach footnote-ref events (delegation) ──
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const handleOver = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('.footnote-ref') as HTMLElement | null;
+      if (!target) return;
+      const id = target.dataset.footnote;
+      if (!id) return;
+
+      // Highlight pane
+      setHighlightId(id);
+
+      // Tooltip (when sidebar is closed)
+      if (!sidebarVisible) {
+        const text = footnotesRef.current.get(id) ?? '';
+        if (!text) return;
+        const rect = target.getBoundingClientRect();
+        setTooltip({ x: rect.left, y: rect.bottom + 5, id, text });
+      }
+    };
+
+    const handleOut = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('.footnote-ref');
+      if (!target) return;
+      setHighlightId(null);
+      setTooltip(null);
+    };
+
+    const handleClick = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('.footnote-ref') as HTMLElement | null;
+      if (!target) return;
+      if (!sidebarVisible) setSidebarVisible(true);
+    };
+
+    el.addEventListener('mouseover', handleOver);
+    el.addEventListener('mouseout', handleOut);
+    el.addEventListener('click', handleClick);
+    return () => {
+      el.removeEventListener('mouseover', handleOver);
+      el.removeEventListener('mouseout', handleOut);
+      el.removeEventListener('click', handleClick);
+    };
+  }, [sidebarVisible]);
+
+  // ── Pane position (wide mode) ──
+  useEffect(() => {
+    if (!sidebarVisible) return;
+    const paneEl = document.querySelector<HTMLElement>('[data-visible="true"]');
+    if (!paneEl) return;
+
+    const apply = () => {
+      if (wideMode && contentRef.current) {
+        const rect = contentRef.current.getBoundingClientRect();
+        paneEl.style.left = `${rect.right}px`;
+        paneEl.style.right = 'auto';
+      } else {
+        paneEl.style.left = '';
+        paneEl.style.right = '0';
+      }
+    };
+    apply();
+
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, [sidebarVisible, wideMode]);
+
+  // ── Narrow mode: push content ──
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (sidebarVisible && !wideMode) {
+      el.style.marginRight = 'var(--pane-width)';
+      el.style.marginLeft = '0';
+    } else {
+      el.style.marginRight = '';
+      el.style.marginLeft = '';
+    }
+  }, [sidebarVisible, wideMode]);
+
+  // Hide tooltip on scroll
+  useEffect(() => {
+    const handler = () => setTooltip(null);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  // ── Selection menu click ──
+  const handleAddAnnotation = useCallback(() => {
+    if (!selection) return;
+    const range = consumeRange();
+    if (!range) return;
+
+    if (!sidebarVisible) setSidebarVisible(true);
+
+    addAnnotation(range, selection.text);
+  }, [selection, consumeRange, sidebarVisible, addAnnotation]);
+
+  // ── Merge visible IDs with AI annotation IDs ──
+  const mergedVisibleIds = useMemo(() => {
+    const merged = new Set(visibleIds);
+    for (const [id, a] of annotations) {
+      if (a.loading) merged.add(id);
+      // Completed AI annotations follow normal observer logic
+    }
+    return merged;
+  }, [visibleIds, annotations]);
+
+  return (
+    <>
+      <Header
+        sidebarVisible={sidebarVisible}
+        onToggleSidebar={() => setSidebarVisible(true)}
+        onFileOpen={initialize}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+
+      <main style={{ marginTop: 'var(--header-height)' }}>
+        <ContentArea ref={contentRef} html={html} />
+
+        <FootnotePane
+          ref={paneRef}
+          visible={sidebarVisible}
+          visibleIds={mergedVisibleIds}
+          footnotes={footnotesRef.current}
+          aiAnnotations={annotations}
+          highlightId={highlightId}
+          onRemoveAi={removeAnnotation}
+          onClose={() => setSidebarVisible(false)}
+          onHoverFootnote={(id) => {
+            setHighlightId(id);
+            document.querySelectorAll('.footnote-ref').forEach((el) =>
+              el.classList.remove('highlight-source'),
+            );
+            if (id) {
+              document.querySelectorAll(`.footnote-ref[data-footnote="${id}"]`).forEach((el) =>
+                el.classList.add('highlight-source'),
+              );
+            }
+          }}
+        />
+      </main>
+
+      <SelectionMenu
+        x={selection?.menuX ?? 0}
+        y={selection?.menuY ?? 0}
+        visible={!!selection && aiConfig.type !== 'none'}
+        onClick={handleAddAnnotation}
+      />
+
+      <FootnoteTooltip
+        x={tooltip?.x ?? 0}
+        y={tooltip?.y ?? 0}
+        visible={!!tooltip && !sidebarVisible}
+        id={tooltip?.id ?? ''}
+        text={tooltip?.text ?? ''}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        config={aiConfig}
+        onSave={setAiConfig}
+        onClose={() => setSettingsOpen(false)}
+      />
+    </>
+  );
+}

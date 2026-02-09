@@ -1,0 +1,39 @@
+.divider {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background-color: var(--color-border);
+  transition: all var(--transition-fast);
+}
+
+.divider:hover .line {
+  width: 0;
+  border-left: 1px dashed var(--color-accent-light);
+}
+
+.icon {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  color: var(--color-accent-light);
+  pointer-events: none;
+}
+
+.divider:hover .icon {
+  opacity: 1;
+}

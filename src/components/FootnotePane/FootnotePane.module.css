@@ -1,0 +1,79 @@
+.pane {
+  position: fixed;
+  top: var(--header-height);
+  right: 0;
+  width: var(--pane-width);
+  height: calc(100vh - var(--header-height));
+  background-color: var(--color-bg);
+  padding: var(--space-md) var(--space-lg);
+  overflow: hidden;
+  display: none;
+}
+
+.pane[data-visible='true'] {
+  display: block;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.placeholder {
+  color: var(--color-text-faint);
+  font-size: var(--font-size-ui);
+  font-style: italic;
+  text-align: center;
+  padding: var(--space-2xl);
+}
+
+.footnoteItem {
+  position: absolute;
+  left: 0;
+  right: 0;
+  padding: 0.4rem 0.5rem;
+  transition: background-color var(--transition-fast);
+}
+
+.footnoteItem[data-highlight='true'] {
+  background-color: var(--color-bg-highlight);
+}
+
+.footnoteItem:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.footnoteNum {
+  font-size: var(--font-size-xs);
+  font-weight: normal;
+  color: var(--color-text-faint);
+  margin-bottom: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.footnoteText {
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+  color: var(--color-text-footnote);
+}
+
+.deleteBtn {
+  display: none;
+  cursor: pointer;
+  color: #BBB;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.2rem;
+  background: none;
+  border: none;
+  line-height: 1;
+}
+
+.deleteBtn:hover {
+  color: var(--color-text-muted);
+}
+
+.footnoteItem[data-ai='true']:hover .deleteBtn {
+  display: inline-flex;
+}
