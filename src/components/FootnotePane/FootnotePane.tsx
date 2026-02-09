@@ -85,7 +85,7 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
 
     useImperativeHandle(ref, () => ({ reposition }), [reposition]);
 
-    // スクロールとリサイズで再配置
+    // スクロールとリサイズで再配置（デスクトップのみ）
     useEffect(() => {
       if (!visible) return;
       let raf = 0;
@@ -93,7 +93,10 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(reposition);
       };
-      window.addEventListener('scroll', handler);
+      // モバイル時はスクロールハンドラーを無効化（順次表示なので不要）
+      if (!mobileMode) {
+        window.addEventListener('scroll', handler);
+      }
       window.addEventListener('resize', handler);
       reposition();
       return () => {
@@ -101,9 +104,27 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
         window.removeEventListener('resize', handler);
         cancelAnimationFrame(raf);
       };
-    }, [visible, reposition, visibleIds]);
+    }, [visible, reposition, visibleIds, mobileMode]);
 
-    const ids = Array.from(visibleIds);
+    // モバイル時は番号順にソート、デスクトップ時はそのまま
+    const ids = Array.from(visibleIds).sort((a, b) => {
+      if (!mobileMode) return 0; // デスクトップは位置で配置されるのでソート不要
+
+      // AI注釈（*で始まる）は後ろに
+      const aIsAi = aiAnnotations.has(a);
+      const bIsAi = aiAnnotations.has(b);
+      if (aIsAi && !bIsAi) return 1;
+      if (!aIsAi && bIsAi) return -1;
+
+      // 両方が通常の注釈の場合、番号順にソート
+      const aNum = parseInt(a, 10);
+      const bNum = parseInt(b, 10);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+
+      return a.localeCompare(b);
+    });
 
     return (
       <div
@@ -112,7 +133,12 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
         data-visible={visible}
         data-mobile={mobileMode || undefined}
       >
-        <PaneDivider visible={visible} onClick={onClose} />
+        <PaneDivider visible={visible} mobileMode={mobileMode} onClick={onClose} />
+        {mobileMode && (
+          <button className={styles.mobileCloseBtn} onClick={onClose} aria-label="注釈を閉じる">
+            <IconClose size={16} />
+          </button>
+        )}
         <div ref={containerRef} className={styles.container}>
           {ids.length === 0 && (
             <div className={styles.placeholder}>

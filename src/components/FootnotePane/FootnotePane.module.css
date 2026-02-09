@@ -30,6 +30,7 @@
   height: 40vh;
   max-height: 400px;
   padding: var(--space-md);
+  padding-top: 2.5rem;
   overflow-y: auto;
   transform: translateY(100%);
   border-top: 1px solid var(--color-border);
@@ -38,6 +39,27 @@
 
 .pane[data-mobile='true'][data-visible='true'] {
   transform: translateY(0);
+}
+
+.mobileCloseBtn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  z-index: 20;
+  transition: color var(--transition-fast);
+}
+
+.mobileCloseBtn:hover {
+  color: var(--color-text);
 }
 
 .container {

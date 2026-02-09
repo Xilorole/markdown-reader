@@ -181,6 +181,17 @@ export default function App() {
     }
   }, [sidebarVisible, wideMode, mobileMode]);
 
+  // ── Mobile mode: add bottom padding for footnote pane ──
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (sidebarVisible && mobileMode) {
+      el.style.paddingBottom = 'calc(40vh + 2rem)';
+    } else {
+      el.style.paddingBottom = '';
+    }
+  }, [sidebarVisible, mobileMode]);
+
   // Hide tooltip on scroll
   useEffect(() => {
     const handler = () => setTooltip(null);

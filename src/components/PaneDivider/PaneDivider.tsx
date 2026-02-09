@@ -3,11 +3,13 @@ import styles from './PaneDivider.module.css';
 
 interface PaneDividerProps {
   visible: boolean;
+  mobileMode?: boolean;
   onClick: () => void;
 }
 
-export function PaneDivider({ visible, onClick }: PaneDividerProps) {
-  if (!visible) return null;
+export function PaneDivider({ visible, mobileMode, onClick }: PaneDividerProps) {
+  // モバイル時は非表示（別の閉じるボタンを使用）
+  if (!visible || mobileMode) return null;
   return (
     <div
       className={styles.divider}
