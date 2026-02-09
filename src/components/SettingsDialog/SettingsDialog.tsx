@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import type { AiProviderConfig, AiProviderType } from '@/types';
+import { createAiProvider } from '@/services/ai-provider';
 import styles from './SettingsDialog.module.css';
+
+type TestStatus = 'idle' | 'testing' | 'success' | 'error';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -14,18 +17,48 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
   const [endpoint, setEndpoint] = useState(config.endpoint ?? '');
   const [apiKey, setApiKey] = useState(config.apiKey ?? '');
   const [deployment, setDeployment] = useState(config.deploymentName ?? '');
+  const [testStatus, setTestStatus] = useState<TestStatus>('idle');
+  const [testMessage, setTestMessage] = useState('');
 
   if (!open) return null;
 
+  const buildConfig = (): AiProviderConfig => ({
+    type,
+    endpoint: endpoint || undefined,
+    apiKey: apiKey || undefined,
+    deploymentName: deployment || undefined,
+  });
+
+  const handleTest = async () => {
+    const cfg = buildConfig();
+    if (cfg.type === 'none') return;
+
+    setTestStatus('testing');
+    setTestMessage('');
+
+    try {
+      const provider = createAiProvider(cfg);
+      await provider.complete({
+        context: '接続テスト',
+        selectedText: 'テスト',
+      });
+      setTestStatus('success');
+      setTestMessage('接続に成功しました');
+    } catch (e) {
+      setTestStatus('error');
+      setTestMessage(e instanceof Error ? e.message : '接続に失敗しました');
+    }
+  };
+
   const handleSave = () => {
-    onSave({
-      type,
-      endpoint: endpoint || undefined,
-      apiKey: apiKey || undefined,
-      deploymentName: deployment || undefined,
-    });
+    onSave(buildConfig());
     onClose();
   };
+
+  const statusColor =
+    testStatus === 'success' ? '#5a8a5a' :
+    testStatus === 'error' ? '#a05050' :
+    'var(--color-text-muted)';
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -37,7 +70,7 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
           <select
             className={styles.select}
             value={type}
-            onChange={(e) => setType(e.target.value as AiProviderType)}
+            onChange={(e) => { setType(e.target.value as AiProviderType); setTestStatus('idle'); }}
           >
             <option value="none">無効</option>
             <option value="anthropic">Anthropic</option>
@@ -53,7 +86,7 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
                 className={styles.input}
                 type="text"
                 value={endpoint}
-                onChange={(e) => setEndpoint(e.target.value)}
+                onChange={(e) => { setEndpoint(e.target.value); setTestStatus('idle'); }}
                 placeholder="https://xxx.openai.azure.com"
               />
             </label>
@@ -63,7 +96,7 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
                 className={styles.input}
                 type="password"
                 value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
+                onChange={(e) => { setApiKey(e.target.value); setTestStatus('idle'); }}
               />
             </label>
             <label className={styles.label}>
@@ -72,10 +105,27 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
                 className={styles.input}
                 type="text"
                 value={deployment}
-                onChange={(e) => setDeployment(e.target.value)}
+                onChange={(e) => { setDeployment(e.target.value); setTestStatus('idle'); }}
               />
             </label>
           </>
+        )}
+
+        {type !== 'none' && (
+          <div className={styles.testRow}>
+            <button
+              className={styles.btnSecondary}
+              onClick={handleTest}
+              disabled={testStatus === 'testing'}
+            >
+              {testStatus === 'testing' ? '接続中...' : '接続を確認'}
+            </button>
+            {testStatus !== 'idle' && testStatus !== 'testing' && (
+              <span className={styles.testMessage} style={{ color: statusColor }}>
+                {testMessage}
+              </span>
+            )}
+          </div>
         )}
 
         <div className={styles.actions}>

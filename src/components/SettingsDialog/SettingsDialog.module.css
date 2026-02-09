@@ -78,3 +78,24 @@
 .btnSecondary:hover {
   background: var(--color-bg-hover);
 }
+
+.testRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.testRow .btnSecondary {
+  flex-shrink: 0;
+}
+
+.testRow .btnSecondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.testMessage {
+  font-size: var(--font-size-body);
+  line-height: 1.4;
+}
