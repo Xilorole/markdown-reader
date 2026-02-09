@@ -101,9 +101,9 @@ export function useAiAnnotation(
       callbacks.observe(sup);
       callbacks.addVisible(id);
 
-      // スクロール補正
+      // スクロール補正（既に画面内にある場合はスクロールしない）
       requestAnimationFrame(() => {
-        sup.scrollIntoView({ block: 'center', behavior: 'instant' as ScrollBehavior });
+        sup.scrollIntoView({ block: 'nearest', behavior: 'instant' as ScrollBehavior });
         callbacks.requestReposition();
       });
 
