@@ -30,6 +30,8 @@ export interface AiProviderConfig {
 export interface AiCompletionRequest {
   context: string;
   selectedText: string;
+  /** ストリーミング用: チャンクが到着するたびに呼ばれる */
+  onStream?: (chunk: string) => void;
 }
 
 /** AI補完レスポンス */

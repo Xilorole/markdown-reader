@@ -1,20 +1,20 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import type { AiProviderConfig } from '@/types';
-import { parseMarkdown } from '@/services/markdown-parser';
-import { createAiProvider } from '@/services/ai-provider';
-import { useWideMode } from '@/hooks/useWideMode';
-import { useVisibleFootnotes } from '@/hooks/useVisibleFootnotes';
-import { useTextSelection } from '@/hooks/useTextSelection';
+import { ContentArea } from '@/components/ContentArea/ContentArea';
+import type { FootnotePaneHandle } from '@/components/FootnotePane/FootnotePane';
+import { FootnotePane } from '@/components/FootnotePane/FootnotePane';
+import { FootnoteTooltip } from '@/components/FootnoteTooltip/FootnoteTooltip';
+import { Header } from '@/components/Header/Header';
+import { SelectionMenu } from '@/components/SelectionMenu/SelectionMenu';
+import { SettingsDialog } from '@/components/SettingsDialog/SettingsDialog';
 import { useAiAnnotation } from '@/hooks/useAiAnnotation';
 import { usePersistedState } from '@/hooks/usePersistedState';
-import { Header } from '@/components/Header/Header';
-import { ContentArea } from '@/components/ContentArea/ContentArea';
-import { FootnotePane } from '@/components/FootnotePane/FootnotePane';
-import type { FootnotePaneHandle } from '@/components/FootnotePane/FootnotePane';
-import { SelectionMenu } from '@/components/SelectionMenu/SelectionMenu';
-import { FootnoteTooltip } from '@/components/FootnoteTooltip/FootnoteTooltip';
-import { SettingsDialog } from '@/components/SettingsDialog/SettingsDialog';
+import { useTextSelection } from '@/hooks/useTextSelection';
+import { useVisibleFootnotes } from '@/hooks/useVisibleFootnotes';
+import { useWideMode } from '@/hooks/useWideMode';
 import { sampleMarkdown } from '@/sample';
+import { createAiProvider } from '@/services/ai-provider';
+import { parseMarkdown } from '@/services/markdown-parser';
+import type { AiProviderConfig } from '@/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export default function App() {
   // ── AI Provider ──
@@ -30,7 +30,7 @@ export default function App() {
   const footnotesRef = useRef<Map<string, string>>(new Map());
 
   // ── Sidebar ──
-  const [sidebarVisible, setSidebarVisible] = usePersistedState('sidebar-visible', false);
+  const [sidebarVisible, setSidebarVisible] = useState(false);
   const wideMode = useWideMode();
 
   // ── Refs ──
@@ -74,7 +74,7 @@ export default function App() {
     [observe, pin, unpin, addVisible, removeVisible, requestReposition],
   );
 
-  const { annotations, addAnnotation, removeAnnotation, reset: resetAi } =
+  const { annotations, addAnnotation, removeAnnotation, prefetch, reset: resetAi } =
     useAiAnnotation(aiProvider, plainText, footnotesRef, aiCallbacks);
 
   // ── Initialize content ──
@@ -197,6 +197,12 @@ export default function App() {
     addAnnotation(range, selection.text);
   }, [selection, consumeRange, sidebarVisible, addAnnotation]);
 
+  // ── Selection menu hover (prefetch) ──
+  const handlePrefetchStart = useCallback(() => {
+    if (!selection) return;
+    prefetch(selection.text);
+  }, [selection, prefetch]);
+
   // ── Merge visible IDs with AI annotation IDs ──
   const mergedVisibleIds = useMemo(() => {
     const merged = new Set(visibleIds);
@@ -247,6 +253,7 @@ export default function App() {
         y={selection?.menuY ?? 0}
         visible={!!selection && aiConfig.type !== 'none'}
         onClick={handleAddAnnotation}
+        onHoverStart={handlePrefetchStart}
       />
 
       <FootnoteTooltip

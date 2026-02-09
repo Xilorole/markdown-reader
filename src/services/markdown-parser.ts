@@ -1,5 +1,5 @@
-import { marked } from 'marked';
 import type { ParsedMarkdown } from '@/types';
+import { marked } from 'marked';
 
 /**
  * 脚注定義を分離してからmarked.jsでレンダリングする。
@@ -45,7 +45,7 @@ export function parseMarkdown(source: string): ParsedMarkdown {
 }
 
 /**
- * 選択テキストの前後400文字を取得する。
+ * 選択テキストの前後200文字を取得する。
  */
 export function getContext(
   plainText: string,
@@ -54,8 +54,8 @@ export function getContext(
   const idx = plainText.indexOf(selectedText);
   if (idx === -1) return { full: selectedText, selected: selectedText };
 
-  const start = Math.max(0, idx - 400);
-  const end = Math.min(plainText.length, idx + selectedText.length + 400);
+  const start = Math.max(0, idx - 200);
+  const end = Math.min(plainText.length, idx + selectedText.length + 200);
   return {
     full: plainText.substring(start, end),
     selected: selectedText,

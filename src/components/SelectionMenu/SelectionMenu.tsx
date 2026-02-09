@@ -6,9 +6,11 @@ interface SelectionMenuProps {
   y: number;
   visible: boolean;
   onClick: () => void;
+  onHoverStart?: () => void;
+  onHoverEnd?: () => void;
 }
 
-export function SelectionMenu({ x, y, visible, onClick }: SelectionMenuProps) {
+export function SelectionMenu({ x, y, visible, onClick, onHoverStart, onHoverEnd }: SelectionMenuProps) {
   if (!visible) return null;
   return (
     <div
@@ -17,6 +19,8 @@ export function SelectionMenu({ x, y, visible, onClick }: SelectionMenuProps) {
       onMouseDown={(e) => e.preventDefault()}
       onMouseUp={(e) => e.stopPropagation()}
       onClick={onClick}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
       role="button"
       aria-label="注釈を追加"
     >

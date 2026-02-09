@@ -77,3 +77,22 @@
 .footnoteItem[data-ai='true']:hover .deleteBtn {
   display: inline-flex;
 }
+
+.streamingCursor {
+  animation: blink 0.8s infinite;
+  color: var(--color-text-muted);
+  margin-left: 2px;
+}
+
+@keyframes blink {
+
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}

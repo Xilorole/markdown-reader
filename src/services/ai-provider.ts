@@ -1,8 +1,8 @@
 import type {
-  AiProviderConfig,
-  AiProviderType,
   AiCompletionRequest,
   AiCompletionResponse,
+  AiProviderConfig,
+  AiProviderType,
 } from '@/types';
 
 const SYSTEM_PROMPT = `あなたは文学作品の注釈を作成する専門家です。
@@ -42,14 +42,14 @@ async function callAnthropic(req: AiCompletionRequest): Promise<AiCompletionResp
 async function callAoai(
   config: AiProviderConfig,
   req: AiCompletionRequest,
+  signal?: AbortSignal,
 ): Promise<AiCompletionResponse> {
   if (!config.endpoint || !config.apiKey || !config.deploymentName) {
     throw new Error('Azure OpenAI の設定が不完全です');
   }
 
-  // endpoint末尾のスラッシュを正規化
   const base = config.endpoint.replace(/\/+$/, '');
-  const url = `${base}/openai/deployments/${config.deploymentName}/chat/completions?api-version=2024-06-01`;
+  const url = `${base}/openai/deployments/${config.deploymentName}/chat/completions?api-version=2024-10-21`;
 
   const res = await fetch(url, {
     method: 'POST',
@@ -62,8 +62,10 @@ async function callAoai(
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: buildUserPrompt(req) },
       ],
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
+      stream: true,
     }),
+    signal,
   });
 
   if (!res.ok) {
@@ -71,11 +73,47 @@ async function callAoai(
     throw new Error(`Azure OpenAI error ${res.status}: ${body.slice(0, 200)}`);
   }
 
-  const data = await res.json();
-  const text = data.choices?.[0]?.message?.content ?? '';
+  if (!res.body) {
+    throw new Error('Azure OpenAI: レスポンスボディがありません');
+  }
 
-  if (!text) throw new Error('Azure OpenAI: 空のレスポンス');
-  return { text };
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+  let buffer = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim() || line === 'data: [DONE]') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        try {
+          const json = JSON.parse(line.slice(6));
+          const delta = json.choices?.[0]?.delta?.content;
+          if (delta) {
+            fullText += delta;
+            req.onStream?.(delta);
+          }
+        } catch (e) {
+          // JSON parse error - skip this chunk
+          continue;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!fullText) throw new Error('Azure OpenAI: 空のレスポンス');
+  return { text: fullText };
 }
 
 export function createAiProvider(config: AiProviderConfig) {
@@ -83,12 +121,15 @@ export function createAiProvider(config: AiProviderConfig) {
     get type(): AiProviderType {
       return config.type;
     },
-    async complete(req: AiCompletionRequest): Promise<AiCompletionResponse> {
+    get config(): AiProviderConfig {
+      return config;
+    },
+    async complete(req: AiCompletionRequest, signal?: AbortSignal): Promise<AiCompletionResponse> {
       switch (config.type) {
         case 'anthropic':
           return callAnthropic(req);
         case 'aoai':
-          return callAoai(config, req);
+          return callAoai(config, req, signal);
         case 'none':
           throw new Error('AIプロバイダーが設定されていません');
       }

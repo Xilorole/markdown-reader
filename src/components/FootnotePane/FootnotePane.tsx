@@ -1,14 +1,14 @@
-import {
-  useRef,
-  useEffect,
-  useCallback,
-  useImperativeHandle,
-  forwardRef,
-} from 'react';
-import type { AiAnnotation } from '@/types';
-import { ShimmerPlaceholder } from '@/components/ShimmerPlaceholder/ShimmerPlaceholder';
 import { PaneDivider } from '@/components/PaneDivider/PaneDivider';
+import { ShimmerPlaceholder } from '@/components/ShimmerPlaceholder/ShimmerPlaceholder';
 import { IconClose } from '@/components/icons';
+import type { AiAnnotation } from '@/types';
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react';
 import styles from './FootnotePane.module.css';
 
 export interface FootnotePaneHandle {
@@ -135,7 +135,8 @@ export const FootnotePane = forwardRef<FootnotePaneHandle, FootnotePaneProps>(
                   )}
                 </div>
                 <div className={styles.footnoteText}>
-                  {isLoading ? <ShimmerPlaceholder /> : text}
+                  {isLoading && !text ? <ShimmerPlaceholder /> : text}
+                  {isLoading && text && <span className={styles.streamingCursor}>▋</span>}
                 </div>
               </div>
             );

@@ -1,5 +1,5 @@
+import { FolderOpen, PanelRight, Settings } from 'lucide-react';
 import { useRef } from 'react';
-import { IconSidebar, IconFile, IconSettings } from '@/components/icons';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -37,26 +37,26 @@ export function Header({
             className={styles.iconBtn}
             onClick={onToggleSidebar}
             aria-label="注釈を表示"
+            data-tooltip="注釈"
           >
-            <IconSidebar size={16} />
-            <span className={styles.iconLabel}>注釈</span>
+            <PanelRight size={18} />
           </button>
         )}
         <button
           className={styles.iconBtn}
           onClick={() => inputRef.current?.click()}
           aria-label="ファイルを開く"
+          data-tooltip="開く"
         >
-          <IconFile size={16} />
-          <span className={styles.iconLabel}>開く</span>
+          <FolderOpen size={18} />
         </button>
         <button
           className={styles.iconBtn}
           onClick={onOpenSettings}
           aria-label="設定"
+          data-tooltip="設定"
         >
-          <IconSettings size={16} />
-          <span className={styles.iconLabel}>設定</span>
+          <Settings size={18} />
         </button>
         <input
           ref={inputRef}

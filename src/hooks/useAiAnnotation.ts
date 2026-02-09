@@ -1,11 +1,22 @@
-import { useState, useCallback, useRef } from 'react';
-import type { AiAnnotation } from '@/types';
 import type { AiProvider } from '@/services/ai-provider';
+import {
+  addChunk,
+  completeCache,
+  createCache,
+  getCache,
+  getCacheKey,
+  hasValidCache,
+  setCacheError,
+  subscribe,
+} from '@/services/annotation-cache';
 import { getContext } from '@/services/markdown-parser';
+import type { AiAnnotation } from '@/types';
+import { useCallback, useRef, useState } from 'react';
 
 /**
  * AI注釈の追加/削除/状態管理。
  * footnotes Mapの更新と、本文へのsup挿入を担う。
+ * プリフェッチ対応：キャッシュがあればそれを使用
  */
 export function useAiAnnotation(
   provider: AiProvider | null,
@@ -22,6 +33,41 @@ export function useAiAnnotation(
 ) {
   const [annotations, setAnnotations] = useState<Map<string, AiAnnotation>>(new Map());
   const counterRef = useRef(0);
+
+  /**
+   * プリフェッチ開始（ホバー時に呼ばれる）
+   */
+  const prefetch = useCallback(
+    (selectedText: string) => {
+      if (!provider || provider.type === 'none') return;
+
+      const cacheKey = getCacheKey(selectedText);
+      if (hasValidCache(cacheKey)) return; // 既にキャッシュあり
+
+      const entry = createCache(cacheKey);
+      const ctx = getContext(plainText, selectedText);
+
+      provider
+        .complete(
+          {
+            context: ctx.full,
+            selectedText: ctx.selected,
+            onStream: (chunk) => {
+              addChunk(cacheKey, chunk);
+            },
+          },
+          entry.abortController?.signal,
+        )
+        .then(() => {
+          completeCache(cacheKey);
+        })
+        .catch((e) => {
+          if (e instanceof Error && e.name === 'AbortError') return;
+          setCacheError(cacheKey, e instanceof Error ? e.message : '注釈の取得に失敗しました');
+        });
+    },
+    [provider, plainText],
+  );
 
   const addAnnotation = useCallback(
     async (range: Range, selectedText: string) => {
@@ -61,14 +107,74 @@ export function useAiAnnotation(
         callbacks.requestReposition();
       });
 
-      // API呼び出し
+      const cacheKey = getCacheKey(selectedText);
+      const cachedEntry = getCache(cacheKey);
+
+      // キャッシュがあればそれを使用
+      if (cachedEntry) {
+        const unsubscribe = subscribe(
+          cacheKey,
+          (chunk) => {
+            footnotesRef.current.set(id, chunk);
+            setAnnotations((prev) => {
+              const next = new Map(prev);
+              next.set(id, { ...annotation, text: chunk, loading: true });
+              return next;
+            });
+            callbacks.requestReposition();
+          },
+          (fullText) => {
+            footnotesRef.current.set(id, fullText);
+            setAnnotations((prev) => {
+              const next = new Map(prev);
+              next.set(id, { ...annotation, text: fullText, loading: false });
+              return next;
+            });
+            callbacks.unpin(id);
+            callbacks.requestReposition();
+          },
+          (error) => {
+            footnotesRef.current.set(id, error);
+            setAnnotations((prev) => {
+              const next = new Map(prev);
+              next.set(id, { ...annotation, text: error, loading: false });
+              return next;
+            });
+            callbacks.unpin(id);
+            callbacks.requestReposition();
+          },
+        );
+
+        // クリーンアップ用に保持（必要に応じて）
+        return () => unsubscribe();
+      }
+
+      // キャッシュがない場合は新規リクエスト
       try {
         const ctx = getContext(plainText, selectedText);
-        const res = await provider.complete({
-          context: ctx.full,
-          selectedText: ctx.selected,
-        });
+        const entry = createCache(cacheKey);
+        let streamingText = '';
 
+        const res = await provider.complete(
+          {
+            context: ctx.full,
+            selectedText: ctx.selected,
+            onStream: (chunk) => {
+              streamingText += chunk;
+              addChunk(cacheKey, chunk);
+              footnotesRef.current.set(id, streamingText);
+              setAnnotations((prev) => {
+                const next = new Map(prev);
+                next.set(id, { ...annotation, text: streamingText, loading: true });
+                return next;
+              });
+              callbacks.requestReposition();
+            },
+          },
+          entry.abortController?.signal,
+        );
+
+        completeCache(cacheKey);
         footnotesRef.current.set(id, res.text);
         setAnnotations((prev) => {
           const next = new Map(prev);
@@ -77,6 +183,7 @@ export function useAiAnnotation(
         });
       } catch (e) {
         const errText = e instanceof Error ? e.message : '注釈の取得に失敗しました';
+        setCacheError(cacheKey, errText);
         footnotesRef.current.set(id, errText);
         setAnnotations((prev) => {
           const next = new Map(prev);
@@ -115,5 +222,5 @@ export function useAiAnnotation(
     counterRef.current = 0;
   }, []);
 
-  return { annotations, addAnnotation, removeAnnotation, reset } as const;
+  return { annotations, addAnnotation, removeAnnotation, prefetch, reset } as const;
 }
