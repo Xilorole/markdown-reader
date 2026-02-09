@@ -7,11 +7,17 @@
   background-color: var(--color-bg);
   padding: var(--space-md) var(--space-lg);
   overflow: visible;
-  display: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0s 0.3s;
 }
 
 .pane[data-visible='true'] {
-  display: block;
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(0);
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0s 0s;
 }
 
 .container {

@@ -116,6 +116,41 @@ async function callAoai(
   return { text: fullText };
 }
 
+/**
+ * Azure OpenAI接続確認（軽量版）
+ * 非ストリーミング + 最小トークンでレイテンシを削減
+ */
+async function testAoaiConnection(
+  config: AiProviderConfig,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!config.endpoint || !config.apiKey || !config.deploymentName) {
+    throw new Error('Azure OpenAI の設定が不完全です');
+  }
+
+  const base = config.endpoint.replace(/\/+$/, '');
+  const url = `${base}/openai/deployments/${config.deploymentName}/chat/completions?api-version=2024-10-21`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'api-key': config.apiKey,
+    },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: 'hi' }],
+      max_completion_tokens: 10,  // 接続確認に十分な最小値
+      stream: false,  // 非ストリーミングで高速化
+    }),
+    signal,
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`接続に失敗しました (${res.status}): ${body.slice(0, 200)}`);
+  }
+}
+
 export function createAiProvider(config: AiProviderConfig) {
   return {
     get type(): AiProviderType {
@@ -130,6 +165,22 @@ export function createAiProvider(config: AiProviderConfig) {
           return callAnthropic(req);
         case 'aoai':
           return callAoai(config, req, signal);
+        case 'none':
+          throw new Error('AIプロバイダーが設定されていません');
+      }
+    },
+    async testConnection(signal?: AbortSignal): Promise<void> {
+      switch (config.type) {
+        case 'anthropic':
+          // Anthropicは実際のリクエストで確認（プロキシ経由のため）
+          await callAnthropic({
+            context: 'テスト',
+            selectedText: 'テスト',
+          });
+          break;
+        case 'aoai':
+          await testAoaiConnection(config, signal);
+          break;
         case 'none':
           throw new Error('AIプロバイダーが設定されていません');
       }

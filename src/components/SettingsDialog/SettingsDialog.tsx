@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import type { AiProviderConfig, AiProviderType } from '@/types';
 import { createAiProvider } from '@/services/ai-provider';
+import type { AiProviderConfig, AiProviderType } from '@/types';
+import { useState } from 'react';
 import styles from './SettingsDialog.module.css';
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -36,17 +36,24 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
     setTestStatus('testing');
     setTestMessage('');
 
+    // 5秒のタイムアウトを設定
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 5000);
+
     try {
       const provider = createAiProvider(cfg);
-      await provider.complete({
-        context: '接続テスト',
-        selectedText: 'テスト',
-      });
+      await provider.testConnection(abortController.signal);
       setTestStatus('success');
       setTestMessage('接続に成功しました');
     } catch (e) {
       setTestStatus('error');
-      setTestMessage(e instanceof Error ? e.message : '接続に失敗しました');
+      if (e instanceof Error && e.name === 'AbortError') {
+        setTestMessage('接続がタイムアウトしました（5秒）');
+      } else {
+        setTestMessage(e instanceof Error ? e.message : '接続に失敗しました');
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   };
 
@@ -57,8 +64,8 @@ export function SettingsDialog({ open, config, onSave, onClose }: SettingsDialog
 
   const statusColor =
     testStatus === 'success' ? '#5a8a5a' :
-    testStatus === 'error' ? '#a05050' :
-    'var(--color-text-muted)';
+      testStatus === 'error' ? '#a05050' :
+        'var(--color-text-muted)';
 
   return (
     <div className={styles.overlay} onClick={onClose}>
